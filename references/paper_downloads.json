@@ -1,0 +1,100 @@
+[
+  {
+    "title": "A Modular Fault Diagnosis and Prognosis Method for Hydro-Control Valve System Based on Redundancy in Multisensor Data Information",
+    "doi": "TR.2018.2864706",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Development of a Methodology Using Artificial Neural Network in the Detection and Diagnosis of Faults for Pneumatic Control Valves",
+    "doi": "s21030853",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Data-driven fault diagnosis of control valve with missing data based on modeling and deep residual shrinkage network",
+    "doi": "jzus.a2100598",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Fault Diagnosis Approach for Pneumatic Control Valves Based on Modified Expert System",
+    "doi": "DCABES50732.2020.00035",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "A practical system for online diagnosis of control valve faults",
+    "doi": "CDC.2007.4434224",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Control Valve Fault Diagnosis based on Transfer Factor Analysis under Various Working Condition",
+    "doi": "ICRMS63553.2024.00098",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Review and analysis of pipeline leak detection methods",
+    "doi": "j.jpse.2022.100074",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Leak detection and localization techniques in oil and gas pipeline: A bibliometric and systematic review",
+    "doi": "j.engfailanal.2023.107060",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Analysis of the smallest detectable leakage flow rate of negative pressure wave-based leak detection systems for liquid pipelines",
+    "doi": "j.compchemeng.2007.08.011",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Novel Negative Pressure Wave-Based Pipeline Leak Detection System Using Fiber Bragg Grating-Based Pressure Sensors",
+    "doi": "JLT.2016.2615468",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Negative pressure wave based pipeline Leak Detection: Challenges and algorithms",
+    "doi": "SOLI.2012.6273565",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Machine learning approach to transient-based leak detection of pressurized pipelines: Classification vs Regression",
+    "doi": "s13349-022-00568-2",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Application of VMD in Pipeline Leak Detection Based on Negative Pressure Wave",
+    "doi": "8699362",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  },
+  {
+    "title": "Applications of machine learning to machine fault diagnosis: A review and roadmap",
+    "doi": "j.ymssp.2019.106587",
+    "status": "metadata_failed: HTTPError",
+    "url": "",
+    "file": ""
+  }
+]
