@@ -57,21 +57,60 @@ def simulate(mode="combined"):
     if mode == "combined":
         m = (days >= 9) & (pid_col < 0)
         pressure[m] += 0.09*np.clip((days[m]-9)/5, 0, 1)*np.sin(np.arange(m.sum())/12)
+    # Public/raw data intentionally contains no state or process labels.
     return pd.DataFrame({"timestamp": START + pd.to_timedelta(np.arange(N)*DT, unit="s"),
-                         "pressure_bar": pressure, "state": np.where(pid_col < 0, "idle", "process"),
-                         "process_type": kind_col, "process_id": pid_col})
+                         "pressure_bar": pressure})
 
 
-def features(raw):
+def detect_processes(raw, baseline_window=1800, enter_delta=0.12, exit_delta=0.06):
+    """Infer process intervals from pressure only using robust baseline + hysteresis."""
+    p = raw.pressure_bar.to_numpy()
+    baseline = float(np.median(p[:min(len(p), baseline_window)]))
+    # idle pressure is near baseline; process excursions are sustained.
+    active = np.abs(p - baseline) > enter_delta
+    starts = np.flatnonzero(active & ~np.r_[False, active[:-1]])
+    ends = np.flatnonzero(active & ~np.r_[active[1:], False])
+    intervals = []
+    for s, e in zip(starts, ends):
+        # Expand through recovery tail using a lower exit threshold.
+        while e + 1 < len(p) and abs(p[e+1]-baseline) > exit_delta:
+            e += 1
+        if e-s+1 >= 8 and np.max(np.abs(p[s:e+1]-baseline)) >= 0.45:
+            intervals.append((s, e))
+    # merge close fragments caused by noisy crossings
+    merged = []
+    for s, e in intervals:
+        if merged and s-merged[-1][1] <= 20:
+            merged[-1] = (merged[-1][0], e)
+        else:
+            merged.append((s, e))
     rows = []
-    for pid, g in raw[raw.process_id >= 0].groupby("process_id", sort=True):
-        p = g.pressure_bar.to_numpy()
-        if len(p) != 20:
+    for pid, (s, e) in enumerate(merged):
+        g = raw.iloc[s:e+1]
+        rows.append({"detected_id": pid, "start_idx": s, "end_idx": e,
+                     "timestamp": g.timestamp.iloc[0], "end_timestamp": g.timestamp.iloc[-1],
+                     "detected_duration_s": (e-s)*DT, "baseline_bar": baseline})
+    return pd.DataFrame(rows)
+
+
+def features(raw, detected):
+    rows = []
+    for _, interval in detected.iterrows():
+        pid, s, e = int(interval.detected_id), int(interval.start_idx), int(interval.end_idx)
+        g = raw.iloc[s:e+1]
+        # A 40-second template is used only for shape classification; it is
+        # not used to discover whether a process exists.
+        if len(g) < 8:
             continue
-        start, kind = g.timestamp.iloc[0], g.process_type.iloc[0]
-        before = raw.iloc[max(0, g.index[0]-20):g.index[0]]
-        idle = before.loc[before.state == "idle", "pressure_bar"]
-        baseline = float(idle.median()) if len(idle) else 4.0
+        p = g.pressure_bar.to_numpy()
+        if len(p) >= 20:
+            p = np.interp(np.linspace(0, len(p)-1, 20), np.arange(len(p)), p)
+        else:
+            p = np.pad(p, (0, 20-len(p)), mode="edge")
+        start = g.timestamp.iloc[0]
+        baseline = float(interval.baseline_bar)
+        # Process 1 has a relatively flat middle; Process 2 keeps recovering.
+        kind = "process1" if abs(p[8]-p[12]) < 0.10 else "process2"
         residual = p-baseline-template(kind)
         middle = residual[5:15]
         middle = middle-np.polyval(np.polyfit(np.arange(10), middle, 1), np.arange(10))
@@ -79,8 +118,9 @@ def features(raw):
         hz = np.fft.rfftfreq(10, DT)
         high = float(spec[hz >= .15].sum())
         low = float(spec[(hz > 0) & (hz < .15)].sum())
-        row = {"process_id": pid, "timestamp": start, "day": int((start-START).total_seconds()//86400),
-               "process_type": kind, "duration_s": 40, "drop_amplitude_bar": baseline-p.min(),
+        row = {"process_id": pid, "start_idx": s, "end_idx": e, "timestamp": start, "day": int((start-START).total_seconds()//86400),
+               "detected_type": kind, "detected_duration_s": float(interval.detected_duration_s),
+               "drop_amplitude_bar": baseline-p.min(),
                "high_low_energy_ratio": high/(low+1e-12), "middle_residual_std_bar": middle.std(),
                "dominant_hz": hz[1:][np.argmax(spec[1:])]}
         for name, sl in {"descent": slice(0,5), "hold_valley": slice(5,15), "recovery": slice(15,20)}.items():
@@ -93,7 +133,7 @@ def features(raw):
 
 
 def detect(pf):
-    p1 = pf[pf.process_type == "process1"]
+    p1 = pf[pf.detected_type == "process1"]
     threshold = float(p1[p1.day < 3].high_low_energy_ratio.quantile(.95))
     daily = p1.groupby("day").agg(events=("process_id", "count"),
                                    frequency=("high_low_energy_ratio", "median"),
@@ -125,9 +165,9 @@ def trend_summary(daily):
 def test_scenarios():
     rows = []
     for mode in ("normal", "amplitude_only", "frequency_only", "both"):
-        pf = features(simulate(mode))
-        early = pf[(pf.day < 3) & (pf.process_type == "process1")]
-        late = pf[(pf.day >= 11) & (pf.process_type == "process1")]
+        raw = simulate(mode); pf = features(raw, detect_processes(raw))
+        early = pf[(pf.day < 3) & (pf.detected_type == "process1")]
+        late = pf[(pf.day >= 11) & (pf.detected_type == "process1")]
         rows.append({"scenario": mode, "events": len(pf),
                      "frequency_ratio": late.high_low_energy_ratio.median()/early.high_low_energy_ratio.median(),
                      "amplitude_ratio": late.middle_residual_std_bar.median()/early.middle_residual_std_bar.median()})
@@ -150,11 +190,12 @@ def png_data(fig):
 
 
 def report(raw, pf, daily, tests, trends_df):
-    early = pf[(pf.process_type == "process1") & (pf.day < 3)].iloc[0]
-    late = pf[(pf.process_type == "process1") & (pf.day >= 11)].iloc[-1]
+    early = pf[(pf.detected_type == "process1") & (pf.day < 3)].iloc[0]
+    late = pf[(pf.detected_type == "process1") & (pf.day >= 11)].iloc[-1]
     fig, ax = plt.subplots(1,2,figsize=(10,3.5),sharey=True)
     for a, r, label in zip(ax, (early,late), ("Early Process 1","Late Process 1")):
-        p = raw.loc[raw.process_id == r.process_id, "pressure_bar"].to_numpy()
+        p = raw.iloc[int(r.start_idx):int(r.end_idx)+1].pressure_bar.to_numpy()
+        p = np.interp(np.linspace(0, len(p)-1, 20), np.arange(len(p)), p)
         a.plot(np.arange(20)*2,p,"o-",markersize=3,color="#206f84")
         a.axvspan(10,30,color="#e6b35c",alpha=.22)
         a.set(title=label,xlabel="Seconds",ylabel="Pressure (bar)"); a.grid(alpha=.2)
@@ -186,14 +227,17 @@ body{{margin:0;background:#f5f7f6;color:#1d3037;font:16px/1.7 system-ui,"Microso
 
 def main():
     raw = simulate("combined")
-    pf = features(raw)
+    detected = detect_processes(raw)
+    pf = features(raw, detected)
     daily = detect(pf)
     trends_df = trend_summary(daily)
     tests = test_scenarios()
-    assert len(raw) == N and pf.duration_s.eq(40).all()
+    assert len(raw) == N and len(detected) > 100
+    assert pf.detected_duration_s.between(8, 80).all()
     assert pf.groupby("day").size().nunique() > 1
     assert tests.passed.all(), tests.to_string(index=False)
     raw.to_csv(OUT/"pressure_readings.csv",index=False)
+    detected.to_csv(OUT/"detected_processes.csv", index=False)
     pf.to_csv(OUT/"process_features.csv",index=False)
     daily.to_csv(OUT/"daily_detection.csv",index=False)
     tests.to_csv(OUT/"scenario_tests.csv",index=False)

@@ -1,4 +1,4 @@
 feature,meaning,slope_per_day,increases_in_last_4,trend_alert,engineering_interpretation
-frequency,Process 内波动频率/高频能量,4.248107883526586,5,True,高频能量持续上升，需排查调节回路、阀芯颤振或气源脉动。
-amplitude,Process 中段波动幅值,0.006628368679161077,5,True,保持段压力波动持续变大，说明稳定性变差，也可能受工艺负荷影响。
-drop,Process 1 压降幅值,0.06182964097199051,5,False,同类 Process 1 压降逐渐变深，可能是调压能力、供气或下游负荷变化。
+frequency,Process 内波动频率/高频能量,2.0734859084124637,5,True,高频能量持续上升，需排查调节回路、阀芯颤振或气源脉动。
+amplitude,Process 中段波动幅值,0.005154768682237222,5,True,保持段压力波动持续变大，说明稳定性变差，也可能受工艺负荷影响。
+drop,Process 1 压降幅值,0.0702537268609622,5,False,同类 Process 1 压降逐渐变深，可能是调压能力、供气或下游负荷变化。
