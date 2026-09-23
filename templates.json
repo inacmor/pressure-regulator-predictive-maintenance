@@ -1,0 +1,10 @@
+{
+  "templates": [],
+  "example": {
+    "template_id": "idle_anomaly_001",
+    "source": "time_range",
+    "start": "2026-01-01T00:00:00",
+    "end": "2026-01-01T00:01:00",
+    "correlation_threshold": 0.85
+  }
+}
