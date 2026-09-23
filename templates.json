@@ -1,5 +1,15 @@
 {
   "templates": [],
+  "template_schema": {
+    "template_id": "唯一名称",
+    "role": "process 或 idle_anomaly",
+    "source": "time_range 或 waveform_csv",
+    "start": "time_range 起点",
+    "end": "time_range 终点",
+    "path": "waveform_csv 文件路径",
+    "correlation_threshold": "相似度阈值，默认0.85",
+    "scan_step_s": "扫描步长，默认采样间隔"
+  },
   "example": {
     "template_id": "idle_anomaly_001",
     "source": "time_range",
